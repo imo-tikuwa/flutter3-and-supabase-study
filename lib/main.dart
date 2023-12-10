@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 Future main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   // .envをロード
   await dotenv.load();
+
+  // SupabaseのCLIを初期化
+  await Supabase.initialize(
+    url: dotenv.get('SUPABASE_URL'),
+    anonKey: dotenv.get('SUPABASE_ANONKEY'),
+  );
 
   runApp(const MyApp());
 }

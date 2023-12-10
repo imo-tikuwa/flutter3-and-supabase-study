@@ -34,6 +34,8 @@ dependencies:
 
   # Flutterで.envを扱うためのパッケージ
   flutter_dotenv: ^5.1.0
+  # FlutterでSupabaseを扱うためのパッケージ(CLIライブラリ)
+  supabase_flutter: ^1.10.25
 
 
   # The following adds the Cupertino Icons font to your application.
