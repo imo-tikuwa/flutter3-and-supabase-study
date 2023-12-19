@@ -1,4 +1,3 @@
-.fvm/flutter_sdk
 
 # Miscellaneous
 *.class
@@ -45,3 +44,6 @@ app.*.map.json
 /android/app/release
 
 .env
+
+# FVM Version Cache
+.fvm/
