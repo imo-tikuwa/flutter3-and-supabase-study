@@ -73,6 +73,27 @@ class _LoginPageState extends State<LoginPage> {
                     }
                   },
                 ),
+                const SizedBox(height: 36.0),
+                ElevatedButton.icon(
+                  icon: const FaIcon(FontAwesomeIcons.google),
+                  label: const Text('Google Account Login'),
+                  onPressed: () async {
+                    final result = await _loginWithOAuth(OAuthProvider.google);
+                    if (result == null || !result) {
+                      return;
+                    }
+                  },
+                ),
+                ElevatedButton.icon(
+                  icon: const FaIcon(FontAwesomeIcons.github),
+                  label: const Text('GitHub Account Login'),
+                  onPressed: () async {
+                    final result = await _loginWithOAuth(OAuthProvider.github);
+                    if (result == null || !result) {
+                      return;
+                    }
+                  },
+                ),
               ],
             ),
           ),
@@ -81,6 +102,7 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  /// メールアドレスとパスワードでログイン
   Future<AuthResponse?> _loginWithPassword({
     required String email,
     required String password,
@@ -108,6 +130,21 @@ class _LoginPageState extends State<LoginPage> {
       });
     }
     // Return null if the login fails
+    return null;
+  }
+
+  /// GitHub、Googleアカウントでログイン
+  Future<bool?> _loginWithOAuth(OAuthProvider provider) async {
+    try {
+      return await supabase.auth.signInWithOAuth(
+        provider,
+        redirectTo: 'com.imo-tikuwa.flutter3-and-supabase-study://login-callback/',
+      );
+    } on AuthException catch (error) {
+      showErrorSnackBar(context, message: error.message);
+    } on Exception catch (e) {
+      showErrorSnackBar(context, message: e.toString());
+    }
     return null;
   }
 }
