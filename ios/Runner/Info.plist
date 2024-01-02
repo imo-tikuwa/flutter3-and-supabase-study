@@ -45,5 +45,23 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<!--
+    Accepts URIs that begin with YOUR_SCHEME://YOUR_HOST
+    参考：https://supabase.com/docs/guides/auth/native-mobile-deep-linking?platform=flutter
+    参考：https://pub.dev/packages/supabase_flutter#deep-link-config
+    参考：https://pregum-fox.hatenablog.jp/entry/2023/12/02/081341#Android
+	※iOSは実機持ってないので未確認
+	-->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.imo-tikuwa.flutter3-and-supabase-study</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

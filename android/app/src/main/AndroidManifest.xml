@@ -23,6 +23,20 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <!--
+                Accepts URIs that begin with YOUR_SCHEME://YOUR_HOST
+                参考：https://supabase.com/docs/guides/auth/native-mobile-deep-linking?platform=flutter
+                参考：https://pub.dev/packages/supabase_flutter#deep-link-config
+                参考：https://pregum-fox.hatenablog.jp/entry/2023/12/02/081341#Android
+                -->
+                <data 
+                    android:scheme="com.imo-tikuwa.flutter3-and-supabase-study"
+                    android:host="login-callback" />
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->
