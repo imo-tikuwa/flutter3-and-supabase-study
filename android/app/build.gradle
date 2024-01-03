@@ -45,7 +45,9 @@ android {
         applicationId "com.imo_tikuwa.flutter3_and_supabase_study"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdkVersion flutter.minSdkVersion
+        // minSdkVersion flutter.minSdkVersion
+        // fluttertoastパッケージ追加後、ビルド時に「The plugin fluttertoast requires a higher Android SDK version.」 というエラーが出たので指示に従い修正
+        minSdkVersion 21
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
