@@ -8,4 +8,5 @@ export 'package:flutter3_and_supabase_study/main.dart';
 export 'package:flutter3_and_supabase_study/view/dashborad.dart';
 export 'package:flutter3_and_supabase_study/view/my_home.dart';
 export 'package:flutter3_and_supabase_study/view/login.dart';
+export 'package:flutter3_and_supabase_study/models/task.dart';
 export 'package:flutter3_and_supabase_study/utils/utils.dart';
