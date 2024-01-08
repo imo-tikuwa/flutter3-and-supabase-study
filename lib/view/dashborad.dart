@@ -13,8 +13,13 @@ class _DashboardPageState extends State<DashboardPage> {
   late final StreamSubscription<AuthState> _authSubscription;
   bool isLoading = false;
 
+  final ScrollController _reorderScrollController = ScrollController();
+  bool _isFloatingActionButtonVisible = true;
+
   @override
   void initState() {
+    _reorderScrollController.addListener(_reorderScrollListener);
+
     // Supabaseの認証状態が変わった時に呼ばれるwatchみたいなやつ
     // ウィジェット内のサインアウトボタン押下後、ログイン状態がサインアウトであることが確認出来たらログイン画面に遷移
     // ※本当はサインアウト時の挙動もmy_home.dart側に押し込めたかったけどうまく行かなかった。。
@@ -36,8 +41,28 @@ class _DashboardPageState extends State<DashboardPage> {
 
   @override
   void dispose() {
+    _reorderScrollController.removeListener(_reorderScrollListener);
+    _reorderScrollController.dispose();
     _authSubscription.cancel();
     super.dispose();
+  }
+
+  /// タスク一覧表示部分のスクロールを監視するリスナー
+  void _reorderScrollListener() {
+    if (_reorderScrollController.hasClients && _reorderScrollController.position.maxScrollExtent > 0 && _reorderScrollController.position.atEdge) {
+      // スクロールが可能な状態かつ、↑もしくは↓にくっついたときの分岐
+      // スクロールが↓に張り付いているときにFloatingActionButtonを非表示
+      setState(() {
+        final isBottom = _reorderScrollController.position.pixels == _reorderScrollController.position.maxScrollExtent;
+        _isFloatingActionButtonVisible = !isBottom;
+      });
+    } else if (!_isFloatingActionButtonVisible) {
+      // スクロールがEdge(端)でないときの分岐
+      // 固定でFloatingActionButtonを表示
+      setState(() {
+        _isFloatingActionButtonVisible = true;
+      });
+    }
   }
 
   @override
@@ -57,7 +82,7 @@ class _DashboardPageState extends State<DashboardPage> {
         ],
       ),
       // タスク新規登録
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: !_isFloatingActionButtonVisible ? null : FloatingActionButton(
         onPressed: () {
           _showEditDialog(context, (editedText) async {
             Task createdTask = await _createOrUpdateTask(Task(title: editedText));
@@ -78,11 +103,12 @@ class _DashboardPageState extends State<DashboardPage> {
             const SizedBox(height: 12.0),
             Expanded(
               child: ReorderableListView.builder(
+                scrollController: _reorderScrollController,
                 itemCount: _tasks.length,
                 itemBuilder: (context, index) {
                   Task task = _tasks[index];
                   return GestureDetector(
-                    key: Key('task$index'),
+                    key: Key('task${task.id}'),
                     onTap: () {
                       _showEditDialog(context, (editedText) {
                         setState(() {
@@ -284,39 +310,50 @@ class _DashboardPageState extends State<DashboardPage> {
       debugPrint(e.toString());
     }
   }
+
   /// タスクの削除確認ダイアログを表示
   Future<void> _showDeleteConfirmDialog(BuildContext context, Task task) async {
-    showDialog(
+    bool confirmDelete = await showDialog(
       barrierDismissible: false,
       context: context,
       builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: const Text('タスクを削除'),
-              content: const Text('タスクを削除します。よろしいですか？'),
-              actions: <Widget>[
-                TextButton(
-                  child: const Text('キャンセル'),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
-                TextButton(
-                  onPressed: () {
-                    _deleteTask(task).then((value) => _fetchTasks().then((value) => Navigator.of(context).pop()));
-                  },
-                  child: const Text('OK'),
-                ),
-              ],
-            );
-          }
+        return AlertDialog(
+          title: const Text('タスクを削除'),
+          content: const Text('タスクを削除します。よろしいですか？'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('キャンセル'),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('OK'),
+            ),
+          ],
         );
       },
     );
+
+    if (confirmDelete) {
+      Task deletedTask = await _deleteTask(task);
+      setState(() {
+        _tasks.removeWhere((task) => task.id == deletedTask.id);
+      });
+
+      // タスクが画面いっぱい+1個が登録されている状態 → 末尾にスクロールした状態でいずれかのタスクを削除 → FloatingActionButtonが表示されない＆スクロールできない＼(＾o＾)／
+      // これを解決するためにFloatingActionButtonの表示可否を判定している_reorderScrollListenerメソッドをマニュアルに呼び出すことでボタンの再表示を促す
+      // ただし、_tasksの削除に関するウィジェットの再レンダリングが終わった後に行う必要がある（WidgetsBinding.instance.addPostFrameCallbackでラップする、ChatGPTに聞いた）
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _reorderScrollListener();
+      });
+    }
   }
 
   /// 1件のタスクを削除する
-  Future<void> _deleteTask(Task task) async {
+  Future<Task> _deleteTask(Task task) async {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
+    late Task deletedTask;
+
     try {
       final result = await supabase.from('tasks').delete().match({'id': task.id}).select();
       if (result.isNotEmpty) {
@@ -329,11 +366,14 @@ class _DashboardPageState extends State<DashboardPage> {
           textColor: Colors.white,
           fontSize: 16.0
         );
+        deletedTask = Task.fromMap(result.first);
       }
     } on PostgrestException catch (error) {
       debugPrint(error.message);
     } on Exception catch (e) {
       debugPrint(e.toString());
     }
+
+    return deletedTask;
   }
 }
