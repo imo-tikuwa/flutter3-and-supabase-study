@@ -59,10 +59,8 @@ class _DashboardPageState extends State<DashboardPage> {
       // タスク新規登録
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Task task = Task(id: null, title: null, completed: false);
-          _showEditDialog(context, task, (editedText) async {
-            task.title = editedText;
-            Task createdTask = await _createOrUpdateTask(task);
+          _showEditDialog(context, (editedText) async {
+            Task createdTask = await _createOrUpdateTask(Task(title: editedText));
             setState(() {
               _tasks.add(createdTask);
             });
@@ -86,12 +84,12 @@ class _DashboardPageState extends State<DashboardPage> {
                   return GestureDetector(
                     key: Key('task$index'),
                     onTap: () {
-                      _showEditDialog(context, task, (editedText) {
+                      _showEditDialog(context, (editedText) {
                         setState(() {
                           task.title = editedText;
                           _createOrUpdateTask(task);
                         });
-                      });
+                      }, task: task);
                     },
                     child: Container(
                       decoration: BoxDecoration(
@@ -110,7 +108,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           Row(
                             children: [
                               Switch(
-                                value: task.completed,
+                                value: task.completed!,
                                 onChanged: (newValue) {
                                   setState(() {
                                     task.completed = newValue;
@@ -182,10 +180,10 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   /// タスクの登録or編集ダイアログを表示
-  Future<void> _showEditDialog(BuildContext context, Task task, Function(String) onSave) async {
-    final TextEditingController textEditingController = TextEditingController(text: task.title);
-    bool isSaveButtonEnabled = task.title?.isNotEmpty ?? false;
-    bool isCreate = task.id == null;
+  Future<void> _showEditDialog(BuildContext context, Function(String) onSave, { Task? task }) async {
+    final TextEditingController textEditingController = TextEditingController(text: task?.title);
+    bool isSaveButtonEnabled = task?.title?.isNotEmpty ?? false;
+    bool isCreate = task == null;
 
     showDialog(
       barrierDismissible: false,
@@ -225,21 +223,16 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   /// 1件のタスクを登録or更新
+  /// プライマリキーがnullかどうかで登録or更新を判定
+  /// supabaseへのクエリはnullの値を除外したMapを渡すことでinsertとupdateを制御
   Future<Task> _createOrUpdateTask(Task task) async {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final bool isCreate = task.id == null;
     late Task upsertedTask;
 
     try {
-      late List<Map<String, dynamic>> result;
-      if (isCreate) {
-        result = await supabase.from('tasks').insert({
-          'title': task.title,
-          'completed': false
-        }).select();
-      } else {
-        result = await supabase.from('tasks').upsert(task.toMap()).select();
-      }
+      Map<String, dynamic> attributes = task.toMapWithoutNullValues();
+      List<Map<String, dynamic>> result = await supabase.from('tasks').upsert(attributes).select();
       if (result.isNotEmpty) {
         Fluttertoast.showToast(
           msg: 'タスクを${isCreate ? '登録' : '更新'}しました',
@@ -250,6 +243,7 @@ class _DashboardPageState extends State<DashboardPage> {
           textColor: Colors.white,
           fontSize: 16.0
         );
+        // 1件のタスクを登録or更新しているので先頭の要素をTaskクラスに変換
         upsertedTask = Task.fromMap(result.first);
       }
     } on PostgrestException catch (error) {

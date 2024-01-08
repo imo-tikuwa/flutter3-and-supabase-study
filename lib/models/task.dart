@@ -1,14 +1,15 @@
 /// supabaseのtasksテーブル1件に相当するモデル
 class Task {
+  /// toMapWithoutNullValuesとの兼ね合いでrequiredをつけないようにしてみる
   Task({
-    required this.id,
-    required this.title,
-    required this.completed,
+    this.id,
+    this.title,
+    this.completed,
   });
 
   int? id;
   String? title;
-  bool completed;
+  bool? completed;
 
   Task.fromMap(Map<String, dynamic> map)
     : id = map['id'],
@@ -21,5 +22,13 @@ class Task {
       'title': title,
       'completed': completed,
     };
+  }
+
+  /// nullのプロパティを除外したマップを返す
+  /// CreateとUpdateを1本化した_createOrUpdateTaskメソッド用
+  Map<String, dynamic> toMapWithoutNullValues() {
+    Map<String, dynamic> map = toMap();
+    map.removeWhere((key, value) => value == null);
+    return map;
   }
 }
